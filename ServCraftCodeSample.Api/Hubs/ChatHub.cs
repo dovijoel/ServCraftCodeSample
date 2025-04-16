@@ -22,10 +22,10 @@ namespace ServCraftCodeSample.Api.Hubs
             await Clients.Caller.SendAsync("receiveMessage", response.MessageText);
         }
 
-        public async Task ReceiveMessage(Guid conversationId, string message)
+        public async Task<string> ReceiveMessage(Guid conversationId, string message)
         {
             var response = await _chatService.SendMessage(conversationId, message);
-            await Clients.Caller.SendAsync("receiveMessage", response.MessageText);
+            return response.MessageText;
         }
     }
 }

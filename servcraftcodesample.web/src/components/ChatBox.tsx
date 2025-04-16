@@ -1,11 +1,16 @@
-import { MantineProvider, Affix, ActionIcon, Popover, TextInput, Stack, Flex, Text } from '@mantine/core';
+import { MantineProvider, Affix, ActionIcon, Popover, TextInput, Stack, Flex, Paper, ScrollArea } from '@mantine/core';
 import { IconMessageChatbot, IconPacman, IconSend } from '@tabler/icons-react';
+import Markdown from 'react-markdown'
 import { useState } from 'react';
+import './ChatBox.css';
 
 export function ChatBox({messages, sendMessage}) {
     const [message, setMessage] = useState("");
-    const messagesList = messages.map((message) => <Text key={message.time}>{message.message}</Text>);
+    const leftClass = "bubble left";
+    const rightClass = "bubble right";
+    const messagesList = messages.map((message, index) => <Paper class={message.isBot ? leftClass : rightClass}  radius="md" shadow="xs" p="sm" withBorder><Markdown key={index}>{message.message}</Markdown></Paper>);
     return (<>
+    <ScrollArea h={275}>
     <Stack
       h={300}
       bg="var(--mantine-color-body)"
@@ -15,7 +20,9 @@ export function ChatBox({messages, sendMessage}) {
     >
         {messagesList}
         </Stack>
+        </ScrollArea>
         <Flex
+        
         mih={50}
         gap="md"
         justify="center"
@@ -23,7 +30,7 @@ export function ChatBox({messages, sendMessage}) {
         direction="row"
         wrap="nowrap"
 >  
-        <TextInput placeholder="Message" value={message} onChange={(event) => setMessage(event.currentTarget.value)} />
+        <TextInput style={{ width: '100%' }}  placeholder="Message" value={message} onChange={(event) => setMessage(event.currentTarget.value)} />
         <ActionIcon size={36} variant="filled" color="blue">
             <IconSend onClick={() => {
                 sendMessage(message);
