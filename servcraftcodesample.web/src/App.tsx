@@ -1,41 +1,103 @@
-import '@mantine/core/styles.css';
-import { createTheme, MantineProvider } from '@mantine/core';
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-const theme = createTheme({
-    /** Put your mantine theme override here */
-});
+import "@mantine/core/styles.css";
+import {
+  MantineProvider,
+  Affix,
+  ActionIcon,
+  Popover,
+  TextInput,
+} from "@mantine/core";
+import { IconMessageChatbot, IconPacman } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import "./App.css";
+import { ChatBox } from "./components/ChatBox.tsx";
+import * as signalR from "@microsoft/signalr";
+import { v4 as uuidv4, NIL as NIL_UUID } from 'uuid';
+import { ChatMessage } from "./model/ChatMessage.tsx";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [conversationId, setConversationId] = useState(NIL_UUID);
+  const [messages, setMessages] = useState<any>([]);
 
-  return (
-      <MantineProvider theme={theme}>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </MantineProvider>
-  )
+  const hubConnection = new signalR.HubConnectionBuilder()
+    .withUrl("/chat")
+    .configureLogging(signalR.LogLevel.Information)
+    .build();
+
+  // Starts the SignalR connection
+  hubConnection.start().then(() => {
+    // Once started, invokes the sendConnectionId in our ChatHub inside our ASP.NET Core application.
+    if (conversationId === NIL_UUID) {
+      hubConnection.invoke("StartConversation");
+    }
+  });
+
+  hubConnection.on("setConversationId", response => {
+    setConversationId(response);
+    console.log("Conversation ID: ", response);
+  });
+
+  hubConnection.on("receiveMessage", message => {
+    setMessages(
+      [
+        ...messages,
+        new ChatMessage(message, new Date(), true)
+      ]
+    );
+  });
+
+
+const sendMessage = (message) => {
+  setMessages(
+    [
+      ...messages,
+      new ChatMessage(message, new Date(), false)
+    ]
+  );
+  hubConnection.invoke("ReceiveMessage", conversationId, message);
 }
 
-export default App
+  return (
+    <MantineProvider>
+      <Affix position={{ bottom: 20, right: 20 }}>
+        <Popover width={300} trapFocus position="top" withArrow shadow="md">
+          <Popover.Target>
+            <ActionIcon size="xl" variant="filled" color="blue">
+              <IconMessageChatbot size={24} />
+            </ActionIcon>
+          </Popover.Target>
+          <Popover.Dropdown>
+            <ChatBox messages={messages} sendMessage={sendMessage} />
+          </Popover.Dropdown>
+        </Popover>
+      </Affix>
+      <div>
+        <a href="https://www.github.com/dovijoel" target="_blank">
+          <img
+            src="https://avatars.githubusercontent.com/u/6263462?v=4"
+            className="logo"
+            alt="ServCraft logo"
+          />
+        </a>
+        <a href="https://www.servcraft.co.za/" target="_blank">
+          <img
+            src="https://www.servcraft.co.za/servcraft/servcraft-logo-dark.svg"
+            className="logo"
+            alt="ServCraft logo"
+          />
+        </a>
+      </div>
+      <h1>Dovi + ServCraft</h1>
+      <div className="card">
+        <p>(Yes, I know it's a bit cheesy)</p>
+      </div>
+      <p className="read-the-docs">
+        Click on the chat button on the lower left corner of the screen to get
+        started.
+      </p>
+    </MantineProvider>
+  );
+}
+
+export default App;

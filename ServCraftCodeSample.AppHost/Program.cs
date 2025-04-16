@@ -4,7 +4,14 @@ var builder = DistributedApplication.CreateBuilder(args);
 builder.AddAzurePublisher("azure-app");
 #pragma warning restore ASPIREPUBLISHERS001
 
-var api = builder.AddProject<Projects.ServCraftCodeSample_Api>("api");
+var db = builder.AddSqlServer("db")
+    .WithLifetime(ContainerLifetime.Persistent)
+    .AddDatabase("servcraftcodesampledb")
+    ;
+
+var api = builder.AddProject<Projects.ServCraftCodeSample_Api>("api")
+    .WithReference(db)
+    .WaitFor(db);
 
 builder.AddNpmApp("web", "../servcraftcodesample.web", "dev")
     .WithReference(api)
